@@ -16,9 +16,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = [
-    "ortools"
-]
 
 [project.urls]
 "Homepage" = "https://github.com/MtCelesteMa/nuclearcraft-designer"
