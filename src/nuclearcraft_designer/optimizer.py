@@ -117,7 +117,13 @@ class ConstrainedIntegerSequence:
 def optimal_sequence(
         seq_gen: typing.Iterable[list[int]],
         scoring_func: typing.Callable[[list[int]], float]
-) -> list[int]:
+) -> list[int] | None:
+    """Determines the optimal sequence.
+
+    :param seq_gen: A sequence iterable.
+    :param scoring_func: The function used to score sequences.
+    :return: The optimal sequence, or None if there is no valid sequence.
+    """
     opt_sequence = None
     opt_score = -float('inf')
     for sequence in seq_gen:
@@ -125,3 +131,20 @@ def optimal_sequence(
             opt_sequence = copy.deepcopy(sequence)
             opt_score = score
     return opt_sequence
+
+
+def max_appearances_constraint(target: int, max_appearances: int) -> typing.Callable[[list[int]], bool]:
+    """Max appearances constraint
+
+    :param target: The integer to monitor.
+    :param max_appearances: The maximum number of times the integer can appear.
+    :return: The constraint function.
+    """
+    def constraint(sequence: list[int]) -> bool:
+        n = 0
+        for elem in sequence:
+            if elem == target:
+                n += 1
+        return n <= max_appearances
+    return constraint
+
