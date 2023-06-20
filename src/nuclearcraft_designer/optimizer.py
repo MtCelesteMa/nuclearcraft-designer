@@ -4,129 +4,124 @@ import copy
 import typing
 
 
-class OptimizableSequence:
-    """An optimizable sequence."""
-    def __init__(
-            self,
-            length: int,
-            max_value: int,
-            constraints: list[typing.Callable[[list[int]], bool]],
-            scoring_func: typing.Callable[[list[int]], float]
-    ) -> None:
-        """Constructs an OptimizableSequence object.
+class ConstrainedIntegerSequence:
+    """A generator that generates a sequence of integers with constraints."""
+    def __init__(self, length: int, upper_bound: int, constraints: list[typing.Callable[[list[int]], bool]]) -> None:
+        """Constructs a ConstrainedIntegerSequence object.
 
         :param length: The length of the sequence.
-        :param max_value: The maximum value of the sequence.
-        :param constraints: A list of constraints the sequence must follow.
-        :param scoring_func: A function used to score complete sequences.
+        :param upper_bound: The upper bound. The sequence's values have a domain of [0, upper_bound).
+        :param constraints: A list of constraints that the sequence must satisfy.
         """
         self.length = length
-        self.max_value = max_value
+        self.upper_bound = upper_bound
         self.constraints = constraints
-        self.scoring_func = scoring_func
 
-        self.sequence = [0 for _ in range(self.length)]
-
-    def is_valid(self) -> bool:
+    def is_valid(self, sequence: list[int]) -> bool:
         """Whether the sequence satisfies all constraints.
 
+        :param sequence: The sequence to be checked.
         :return: True if all constraints are satisfied, false otherwise.
         """
         for constraint in self.constraints:
-            if not constraint(self.sequence):
+            if not constraint(sequence):
                 return False
         return True
 
-    def advance(self) -> bool:
-        """Advances the last value in the sequence if possible.
-
-        :return: True if the operation was successful, false otherwise.
-        """
-        for i in range(self.length - 1, -1, -1):
-            if self.sequence[i] != 0:
-                if self.sequence[i] == self.max_value:
-                    return False
-                self.sequence[i] += 1
-                return True
-        return False
-
-    def next_row(self) -> bool:
-        """Adds a value to the sequence if possible.
-
-        :return: True if the operation was successful, false otherwise.
-        """
-        for i in range(self.length):
-            if self.sequence[i] == 0:
-                self.sequence[i] = 1
-                return True
-        return False
-
-    def prev_row(self) -> bool:
-        """Removes the last value of the sequence and advances the sequence if possible.
-
-        :return: True if the operation was successful, false otherwise.
-        """
-        for i in range(self.length - 1, -1, -1):
-            if self.sequence[i] != 0:
-                self.sequence[i] = 0
-                if self.advance():
-                    return True
-                else:
-                    return self.prev_row()
-        return False
-
-    def next_sequence(self) -> bool:
-        """Finds the next candidate (partial) sequence if possible.
-
-        :return: True if the operation was successful, false otherwise.
-        """
-        if self.is_valid():
-            return self.next_row() or self.advance() or self.prev_row()
-        else:
-            return self.advance() or self.prev_row()
-
-    def next_valid_sequence(self) -> bool:
-        """Finds the next valid (partial) sequence if possible.
-
-        :return: True if the operation was successful, false otherwise.
-        """
-        while True:
-            if not self.next_sequence():
-                return False
-            if self.is_valid():
-                return True
-
-    def is_complete(self) -> bool:
+    def is_complete(self, sequence: list[int]) -> bool:
         """Whether the sequence is complete.
 
         :return: True if the sequence is complete, false otherwise.
         """
-        for elem in self.sequence:
-            if elem == 0:
+        for elem in sequence:
+            if elem == -1:
                 return False
         return True
 
-    def score(self) -> float:
-        """Calculates the score of the sequence.
+    def advance(self, sequence: list[int]) -> bool:
+        """Advances the last value in the sequence if possible.
 
-        :return: The score of the sequence.
+        :param sequence: The sequence to be modified.
+        :return: True if the operation is successful, false otherwise.
         """
-        return self.scoring_func(self.sequence)
-
-    def optimize(self) -> bool:
-        """Optimize the sequence.
-
-        :return: True if an optimal sequence has been found, false otherwise.
-        """
-        opt_seq = None
-        opt_score = -float('inf')
-
-        while self.next_valid_sequence():
-            if self.is_complete() and self.score() > opt_score:
-                opt_seq = copy.deepcopy(self.sequence)
-                opt_score = self.score()
-
-        if opt_seq:
-            self.sequence = opt_seq
-            return True
+        for i in range(len(sequence) - 1, -1, -1):
+            if sequence[i] != -1:
+                if sequence[i] == self.upper_bound - 1:
+                    return False
+                sequence[i] += 1
+                return True
         return False
+
+    def next_row(self, sequence: list[int]) -> bool:
+        """Adds a value to the sequence if possible.
+
+        :param sequence: The sequence to be modified.
+        :return: True if the operation is successful, false otherwise.
+        """
+        for i in range(len(sequence)):
+            if sequence[i] == -1:
+                sequence[i] = 0
+                return True
+        return False
+
+    def prev_row(self, sequence: list[int]) -> bool:
+        """Removes the last value of the sequence and advances the sequence if possible.
+
+        :param sequence: The sequence to be modified.
+        :return: True if the operation is successful, false otherwise.
+        """
+        for i in range(len(sequence) - 1, -1, -1):
+            if sequence[i] != -1:
+                sequence[i] = -1
+                if self.advance(sequence):
+                    return True
+                else:
+                    return self.prev_row(sequence)
+        return False
+
+    def next_sequence(self, sequence: list[int]) -> bool:
+        """Finds the next candidate (partial) sequence if possible.
+
+        :param sequence: The sequence to be modified.
+        :return: True if the operation was successful, false otherwise.
+        """
+        if self.is_valid(sequence):
+            return self.next_row(sequence) or self.advance(sequence) or self.prev_row(sequence)
+        else:
+            return self.advance(sequence) or self.prev_row(sequence)
+
+    def next_valid_sequence(self, sequence: list[int]) -> bool:
+        """Finds the next valid (partial) sequence if possible.
+
+        :param sequence: The sequence to be modified.
+        :return: True if the operation was successful, false otherwise.
+        """
+        while True:
+            if not self.next_sequence(sequence):
+                return False
+            if self.is_valid(sequence):
+                return True
+
+    def generator(self, yield_partial: bool = False) -> typing.Generator[list[int], None, None]:
+        """Creates a generator that generates valid sequences.
+
+        :param yield_partial: Yield partial sequences. Defaults to false.
+        :return: A generator.
+        """
+        sequence = [-1 for _ in range(self.length)]
+        while self.next_valid_sequence(sequence):
+            if yield_partial or self.is_complete(sequence):
+                yield copy.deepcopy(sequence)
+
+
+def optimal_sequence(
+        seq_gen: typing.Iterable[list[int]],
+        scoring_func: typing.Callable[[list[int]], float]
+) -> list[int]:
+    opt_sequence = None
+    opt_score = -float('inf')
+    for sequence in seq_gen:
+        if (score := scoring_func(sequence)) > opt_score:
+            opt_sequence = copy.deepcopy(sequence)
+            opt_score = score
+    return opt_sequence
