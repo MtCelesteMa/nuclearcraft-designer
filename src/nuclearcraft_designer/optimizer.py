@@ -113,10 +113,10 @@ class OptimizableSequence:
         """
         return self.scoring_func(self.sequence)
 
-    def optimize(self) -> float:
+    def optimize(self) -> bool:
         """Optimize the sequence.
 
-        :return: The score of the optimal sequence.
+        :return: True if an optimal sequence has been found, false otherwise.
         """
         opt_seq = None
         opt_score = -float('inf')
@@ -126,5 +126,7 @@ class OptimizableSequence:
                 opt_seq = copy.deepcopy(self.sequence)
                 opt_score = self.score()
 
-        self.sequence = opt_seq
-        return opt_score
+        if opt_seq:
+            self.sequence = opt_seq
+            return True
+        return False
