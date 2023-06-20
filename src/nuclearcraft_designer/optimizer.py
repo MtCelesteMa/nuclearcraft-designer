@@ -114,23 +114,31 @@ class ConstrainedIntegerSequence:
                 yield copy.deepcopy(sequence)
 
 
-def optimal_sequence(
-        seq_gen: typing.Iterable[list[int]],
-        scoring_func: typing.Callable[[list[int]], float]
-) -> list[int] | None:
-    """Determines the optimal sequence.
+class SequenceOptimizer:
+    """Determines the optimal sequence."""
+    def __init__(
+            self,
+            seq_gen: typing.Iterable[list[int]],
+            scoring_func: typing.Callable[[list[int]], float]
+    ):
+        """Constructs a SequenceOptimizer object.
 
-    :param seq_gen: A sequence iterable.
-    :param scoring_func: The function used to score sequences.
-    :return: The optimal sequence, or None if there is no valid sequence.
-    """
-    opt_sequence = None
-    opt_score = -float('inf')
-    for sequence in seq_gen:
-        if (score := scoring_func(sequence)) > opt_score:
-            opt_sequence = copy.deepcopy(sequence)
-            opt_score = score
-    return opt_sequence
+        :param seq_gen: A sequence iterable.
+        :param scoring_func: The function used to score sequences.
+        """
+        self.seq_gen = seq_gen
+        self.scoring_func = scoring_func
+
+    def generator(self) -> typing.Generator[list[int], None, None]:
+        """Returns a generator that iteratively yields better sequences.
+
+        :return: A generator object.
+        """
+        opt_score = -float('inf')
+        for sequence in self.seq_gen:
+            if (score := self.scoring_func(sequence)) > opt_score:
+                opt_score = score
+                yield copy.deepcopy(sequence)
 
 
 def max_appearances_constraint(target: int, max_appearances: int) -> typing.Callable[[list[int]], bool]:
@@ -147,4 +155,3 @@ def max_appearances_constraint(target: int, max_appearances: int) -> typing.Call
                 n += 1
         return n <= max_appearances
     return constraint
-
