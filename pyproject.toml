@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nuclearcraft_designer"
-version = "0.0.1.dev"
+version = "0.0.1"
 authors = [
   { name="Celeste Ma", email="gerry.y.ma@gmail.com" },
 ]
