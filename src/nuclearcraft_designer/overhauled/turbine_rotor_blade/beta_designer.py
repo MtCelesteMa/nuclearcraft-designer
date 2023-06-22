@@ -1,7 +1,7 @@
 """NuclearCraft: Overhauled turbine rotor blade sequence designer."""
 
 from . import RotorBlade, ROTOR_BLADE_TYPES
-wfrom ...utils import scaled_calculator
+from ...utils import scaled_calculator
 
 import uuid
 
