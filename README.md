@@ -29,3 +29,15 @@ if __name__ == "__main__":
         print(blade.name, end=" ")
     print()
 ```
+### OR-Tools Powered Designers (currently only available in dev versions)
+Certain NuclearCraft Designer designers have OR-Tools powered alternatives. They are generally faster than the normal designers, but are less reliable and may have less features.
+```python
+from nuclearcraft_designer.overhauled.turbine_rotor_blade import beta_designer
+
+if __name__ == "__main__":
+    status, sequence = beta_designer.RotorBladeSequenceDesigner().design(10, 4.0)
+    print(status)
+    for blade in sequence:
+        print(blade.name, end=" ")
+    print()
+```
