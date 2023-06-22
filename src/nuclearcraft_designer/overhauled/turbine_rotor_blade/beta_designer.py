@@ -1,7 +1,7 @@
 """NuclearCraft: Overhauled turbine rotor blade sequence designer."""
 
 from . import RotorBlade, ROTOR_BLADE_TYPES
-from ... import scaled_calculator
+wfrom ...utils import scaled_calculator
 
 import uuid
 
@@ -88,11 +88,11 @@ class RotorBladeSequenceDesigner:
             expansions: list[cp_model.IntVar],
             expansions_sqrt: list[cp_model.IntVar]
     ) -> list[cp_model.IntVar]:
-        """
+        """Calculates the expansion levels of a sequence of rotor blades.
 
-        :param model: The
-        :param expansions:
-        :param expansions_sqrt:
+        :param model: The optimization model.
+        :param expansions: A list of IntVars representing each blade's expansion.
+        :param expansions_sqrt: A list of IntVars representing the square root of each blade's expansion.
         :return: A list of IntVars representing the expansion levels.
         """
         expansion_levels = [
@@ -114,13 +114,13 @@ class RotorBladeSequenceDesigner:
             expansion_levels: list[cp_model.IntVar],
             opt_expansion: float
     ) -> cp_model.IntVar:
-        """
+        """Calculates the total efficiency of a sequence of rotor blades.
 
-        :param model:
-        :param efficiencies:
-        :param expansion_levels:
-        :param opt_expansion:
-        :return:
+        :param model: The optimization model.
+        :param efficiencies: A list of IntVars representing each blade's efficiency.
+        :param expansion_levels: A list of IntVars representing the expansion levels.
+        :param opt_expansion: The optimal expansion.
+        :return: An IntVar representing the total efficiency.
         """
         total_efficiencies = [
             model.NewIntVar(0, 2 ** 31 - 1, "total_efficiency_{0:d}".format(i))
