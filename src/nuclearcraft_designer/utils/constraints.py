@@ -30,7 +30,11 @@ class MaxQuantityConstraint(Constraint):
         self.target_name = target_name
         self.max_quantity = max_quantity
 
-    def __call__(self, sequence: list[component.Component], **kwargs) -> bool:
+    def __call__(
+            self,
+            sequence: list[component.Component] | ndim_sequence.Sequence2D[component.Component],
+            **kwargs
+    ) -> bool:
         n = 0
         for component in sequence:
             if isinstance(component, type(None)):

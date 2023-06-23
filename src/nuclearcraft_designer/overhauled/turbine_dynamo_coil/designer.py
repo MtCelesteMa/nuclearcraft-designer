@@ -47,13 +47,13 @@ class DynamoCoilConfigurationDesigner:
             self,
             side_length: int,
             shaft_width: int,
-            constraints: list[utils.constraints.Constraint]
+            type_limits: dict[str, int]
     ) -> typing.Generator[utils.ndim_sequence.Sequence2D[DynamoCoil], None, None]:
         """Constructs a generator that iteratively generates better dynamo coil sequences.
 
         :param side_length: The side length of the turbine.
         :param shaft_width: The width of the rotor shaft.
-        :param constraints: A list of constraints to be enforced.
+        :param type_limits: The maximum number of each type of dynamo coil.
         :return: A generator object.
         """
         gen = utils.optimizer.SequenceOptimizer(
@@ -64,8 +64,8 @@ class DynamoCoilConfigurationDesigner:
                     lambda seq: utils.constraints.CenteredBearingsConstraint(shaft_width)(self.ids_to_coils(seq)),
                     lambda seq: utils.constraints.PlacementRuleConstraint()(self.ids_to_coils(seq))
                 ] + [
-                    lambda seq: constraint(self.ids_to_coils(seq))
-                    for constraint in constraints
+                    lambda seq: utils.constraints.MaxQuantityConstraint(target_name, quantity)(self.ids_to_coils(seq))
+                    for target_name, quantity in type_limits.items()
                 ]
             ).generator(),
             lambda seq: self.total_efficiency(self.ids_to_coils(seq))

@@ -67,13 +67,13 @@ class RotorBladeSequenceDesigner:
             self,
             length: int,
             opt_expansion: float,
-            constraints: list[utils.constraints.Constraint]
+            type_limits: dict[str, int]
     ) -> typing.Generator[list[RotorBlade], None, None]:
         """Constructs a generator that iteratively generates better rotor blade sequences.
 
         :param length: The length of the rotor blade sequence.
         :param opt_expansion: The expansion level to optimize for.
-        :param constraints: A list of constraints to be enforced.
+        :param type_limits: The maximum number of each type of rotor blade.
         :return: A generator object.
         """
         gen = utils.optimizer.SequenceOptimizer(
@@ -81,11 +81,11 @@ class RotorBladeSequenceDesigner:
                 length,
                 len(self.rotor_blade_types),
                 [
-                    lambda seq: constraint(self.ids_to_blades(seq))
-                    for constraint in constraints
+                    lambda seq: utils.constraints.MaxQuantityConstraint(target_name, quantity)(self.ids_to_blades(seq))
+                    for target_name, quantity in type_limits.items()
                 ]
             ).generator(),
-            lambda sequence: self.total_efficiency(self.ids_to_blades(sequence), opt_expansion)
+            lambda seq: self.total_efficiency(self.ids_to_blades(seq), opt_expansion)
         ).generator()
         for sequence in gen:
             yield self.ids_to_blades(sequence)
