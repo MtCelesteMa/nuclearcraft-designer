@@ -1,15 +1,15 @@
 """NuclearCraft: Overhauled turbine dynamo coil data structures."""
 
-from ...utils import placement_rule
+from ... import utils
 
 
-class DynamoCoil:
+class DynamoCoil(utils.component.Component):
     """An object representing a NuclearCraft: Overhauled turbine dynamo coil."""
     def __init__(
             self,
             name: str,
             conductivity: float,
-            placement_rule: placement_rule.PlacementRule
+            placement_rule: utils.placement_rule.PlacementRule
     ) -> None:
         """Constructs a DynamoCoil object.
 
@@ -17,33 +17,33 @@ class DynamoCoil:
         :param conductivity: The conductivity of the dynamo coil.
         :param placement_rule: The placement rule of the dynamo coil.
         """
-        self.name = name
+        super().__init__(name)
         self.conductivity = conductivity
         self.placement_rule = placement_rule
 
 
-CASING = DynamoCoil("casing", -1.0, placement_rule.PlacementRule())
-BEARING = DynamoCoil("bearing", -1.0, placement_rule.PlacementRule())
-CONNECTOR = DynamoCoil("connector", -1.0, placement_rule.CompoundPlacementRule([
-    placement_rule.SimplePlacementRule("magnesium", 1),
-    placement_rule.SimplePlacementRule("beryllium", 1),
-    placement_rule.SimplePlacementRule("aluminum", 1),
-    placement_rule.SimplePlacementRule("gold", 1),
-    placement_rule.SimplePlacementRule("copper", 1),
-    placement_rule.SimplePlacementRule("silver", 1)
-], placement_rule.LogicMode.OR))
-MAGNESIUM = DynamoCoil("magnesium", 0.88, placement_rule.CompoundPlacementRule([
-    placement_rule.SimplePlacementRule("bearing", 1),
-    placement_rule.SimplePlacementRule("connector", 1)
-], placement_rule.LogicMode.OR))
-BERYLLIUM = DynamoCoil("beryllium", 0.9, placement_rule.SimplePlacementRule("magnesium", 1))
-ALUMINUM = DynamoCoil("aluminum", 1.0, placement_rule.SimplePlacementRule("magnesium", 2))
-GOLD = DynamoCoil("gold", 1.04, placement_rule.SimplePlacementRule("aluminum", 1))
-COPPER = DynamoCoil("copper", 1.06, placement_rule.SimplePlacementRule("beryllium", 1))
-SILVER = DynamoCoil("silver", 1.12, placement_rule.CompoundPlacementRule([
-    placement_rule.SimplePlacementRule("gold", 1),
-    placement_rule.SimplePlacementRule("copper", 1)
-], placement_rule.LogicMode.AND))
+CASING = DynamoCoil("casing", -1.0, utils.placement_rule.PlacementRule())
+BEARING = DynamoCoil("bearing", -1.0, utils.placement_rule.PlacementRule())
+CONNECTOR = DynamoCoil("connector", -1.0, utils.placement_rule.CompoundPlacementRule([
+    utils.placement_rule.SimplePlacementRule("magnesium", 1),
+    utils.placement_rule.SimplePlacementRule("beryllium", 1),
+    utils.placement_rule.SimplePlacementRule("aluminum", 1),
+    utils.placement_rule.SimplePlacementRule("gold", 1),
+    utils.placement_rule.SimplePlacementRule("copper", 1),
+    utils.placement_rule.SimplePlacementRule("silver", 1)
+], utils.placement_rule.LogicMode.OR))
+MAGNESIUM = DynamoCoil("magnesium", 0.88, utils.placement_rule.CompoundPlacementRule([
+    utils.placement_rule.SimplePlacementRule("bearing", 1),
+    utils.placement_rule.SimplePlacementRule("connector", 1)
+], utils.placement_rule.LogicMode.OR))
+BERYLLIUM = DynamoCoil("beryllium", 0.9, utils.placement_rule.SimplePlacementRule("magnesium", 1))
+ALUMINUM = DynamoCoil("aluminum", 1.0, utils.placement_rule.SimplePlacementRule("magnesium", 2))
+GOLD = DynamoCoil("gold", 1.04, utils.placement_rule.SimplePlacementRule("aluminum", 1))
+COPPER = DynamoCoil("copper", 1.06, utils.placement_rule.SimplePlacementRule("beryllium", 1))
+SILVER = DynamoCoil("silver", 1.12, utils.placement_rule.CompoundPlacementRule([
+    utils.placement_rule.SimplePlacementRule("gold", 1),
+    utils.placement_rule.SimplePlacementRule("copper", 1)
+], utils.placement_rule.LogicMode.AND))
 
 DYNAMO_COIL_TYPES = [
     CASING,

@@ -2,7 +2,10 @@
 
 import uuid
 
-from ortools.sat.python import cp_model
+try:
+    from ortools.sat.python import cp_model
+except ImportError:
+    cp_model = None
 
 
 class ScaledCalculator:

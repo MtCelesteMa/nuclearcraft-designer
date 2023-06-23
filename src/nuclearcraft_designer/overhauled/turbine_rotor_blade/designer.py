@@ -1,7 +1,7 @@
 """NuclearCraft: Overhauled turbine rotor blade sequence designer."""
 
 from . import RotorBlade, ROTOR_BLADE_TYPES
-from ...utils import optimizer
+from ... import utils
 
 import typing
 
@@ -67,27 +67,22 @@ class RotorBladeSequenceDesigner:
             self,
             length: int,
             opt_expansion: float,
-            type_limits: dict[str, int]
+            constraints: list[utils.constraints.Constraint]
     ) -> typing.Generator[list[RotorBlade], None, None]:
         """Constructs a generator that iteratively generates better rotor blade sequences.
 
         :param length: The length of the rotor blade sequence.
         :param opt_expansion: The expansion level to optimize for.
-        :param type_limits: The maximum number of each type of rotor blades.
+        :param constraints: A list of constraints to be enforced.
         :return: A generator object.
         """
-        type_limits_ = [-1 for _ in self.rotor_blade_types]
-        for name, limit in type_limits.items():
-            for i, blade_type in enumerate(self.rotor_blade_types):
-                if name == blade_type.name:
-                    type_limits_[i] = limit
-        gen = optimizer.SequenceOptimizer(
-            optimizer.ConstrainedIntegerSequence(
+        gen = utils.optimizer.SequenceOptimizer(
+            utils.optimizer.ConstrainedIntegerSequence(
                 length,
                 len(self.rotor_blade_types),
                 [
-                    optimizer.max_appearances_constraint(i, limit)
-                    for i, limit in enumerate(type_limits_) if limit >= 0
+                    lambda seq: constraint(self.ids_to_blades(seq))
+                    for constraint in constraints
                 ]
             ).generator(),
             lambda sequence: self.total_efficiency(self.ids_to_blades(sequence), opt_expansion)

@@ -1,7 +1,9 @@
 """NuclearCraft: Overhauled turbine rotor blades."""
 
+from ... import utils
 
-class RotorBlade:
+
+class RotorBlade(utils.component.Component):
     """An object representing a NuclearCraft: Overhauled turbine rotor blade."""
     def __init__(self, name: str, efficiency: float, expansion: float) -> None:
         """Constructs a RotorBlade object.
@@ -10,7 +12,7 @@ class RotorBlade:
         :param efficiency: The efficiency of the rotor blade.
         :param expansion: The expansion of the rotor blade.
         """
-        self.name = name
+        super().__init__(name)
         self.efficiency = efficiency
         self.expansion = expansion
 

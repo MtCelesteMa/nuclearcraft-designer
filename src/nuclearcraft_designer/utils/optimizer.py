@@ -139,19 +139,3 @@ class SequenceOptimizer:
             if (score := self.scoring_func(sequence)) > opt_score:
                 opt_score = score
                 yield copy.deepcopy(sequence)
-
-
-def max_appearances_constraint(target: int, max_appearances: int) -> typing.Callable[[list[int]], bool]:
-    """Max appearances constraint
-
-    :param target: The integer to monitor.
-    :param max_appearances: The maximum number of times the integer can appear.
-    :return: The constraint function.
-    """
-    def constraint(sequence: list[int]) -> bool:
-        n = 0
-        for elem in sequence:
-            if elem == target:
-                n += 1
-        return n <= max_appearances
-    return constraint

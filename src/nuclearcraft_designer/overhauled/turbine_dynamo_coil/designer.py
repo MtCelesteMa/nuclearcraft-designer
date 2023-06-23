@@ -1,7 +1,7 @@
 """NuclearCraft: Overhauled turbine dynamo coil configuration designer."""
 
 from . import DynamoCoil, DYNAMO_COIL_TYPES
-from ...utils import ndim_sequence, optimizer
+from ... import utils
 
 import typing
 
@@ -18,13 +18,13 @@ class DynamoCoilConfigurationDesigner:
         """
         self.dynamo_coil_types = dynamo_coil_types
 
-    def ids_to_blades(self, sequence: list[int]) -> ndim_sequence.Sequence2D[DynamoCoil]:
+    def ids_to_coils(self, sequence: list[int]) -> utils.ndim_sequence.Sequence2D[DynamoCoil]:
         """Converts a sequence of IDs to a sequence of rotor blades.
 
         :param sequence: A sequence of IDs.
         :return: A sequence of rotor blades.
         """
-        return ndim_sequence.Sequence2D([
+        return utils.ndim_sequence.Sequence2D([
             self.dynamo_coil_types[i] if i >= 0 else None
             for i in sequence
         ], round(len(sequence) ** (1 / 2)))
@@ -36,7 +36,7 @@ class DynamoCoilConfigurationDesigner:
         :param shaft_width: The width of the shaft.
         :return: True if the bearings are centered, false otherwise.
         """
-        configuration = self.ids_to_blades(sequence)
+        configuration = self.ids_to_coils(sequence)
         for x in range(configuration.cols):
             for y in range(configuration.cols):
                 if configuration.cols % 2:
@@ -71,7 +71,7 @@ class DynamoCoilConfigurationDesigner:
         :param sequence: A sequence of IDs.
         :return: True if all dynamo coils follow placement rules, false otherwise.
         """
-        configuration = self.ids_to_blades(sequence)
+        configuration = self.ids_to_coils(sequence)
         for x in range(configuration.cols):
             for y in range(configuration.cols):
                 up = self.coil_name(configuration[x, y - 1]) if y > 0 else "wall"
@@ -82,7 +82,7 @@ class DynamoCoilConfigurationDesigner:
                     return False
         return True
 
-    def total_efficiency(self, sequence: ndim_sequence.Sequence2D[DynamoCoil]) -> float:
+    def total_efficiency(self, sequence: utils.ndim_sequence.Sequence2D[DynamoCoil]) -> float:
         """Calculates the total efficiency of a sequence of dynamo coils.
 
         :param sequence: A sequence of dynamo coils.
@@ -100,34 +100,28 @@ class DynamoCoilConfigurationDesigner:
             self,
             side_length: int,
             shaft_width: int,
-            type_limits: dict[str, int]
-    ) -> typing.Generator[ndim_sequence.Sequence2D[DynamoCoil], None, None]:
+            constraints: list[utils.constraints.Constraint]
+    ) -> typing.Generator[utils.ndim_sequence.Sequence2D[DynamoCoil], None, None]:
         """Constructs a generator that iteratively generates better dynamo coil sequences.
 
         :param side_length: The side length of the turbine.
         :param shaft_width: The width of the rotor shaft.
-        :param type_limits: The maximum number of each type of dynamo coil.
+        :param constraints: A list of constraints to be enforced.
         :return: A generator object.
         """
-        type_limits_ = [-1 for _ in self.dynamo_coil_types]
-        for name, limit in type_limits.items():
-            for i, blade_type in enumerate(self.dynamo_coil_types):
-                if name == blade_type.name:
-                    type_limits_[i] = limit
-
-        gen = optimizer.SequenceOptimizer(
-            optimizer.ConstrainedIntegerSequence(
+        gen = utils.optimizer.SequenceOptimizer(
+            utils.optimizer.ConstrainedIntegerSequence(
                 side_length ** 2,
                 len(self.dynamo_coil_types),
                 [
                     lambda seq: self.centered_bearings_constraint(seq, shaft_width),
                     self.placement_rule_constraint
                 ] + [
-                    optimizer.max_appearances_constraint(i, limit)
-                    for i, limit in enumerate(type_limits_) if limit >= 0
+                    lambda seq: constraint(list(self.ids_to_coils(seq)))
+                    for constraint in constraints
                 ]
             ).generator(),
-            lambda seq: self.total_efficiency(self.ids_to_blades(seq))
+            lambda seq: self.total_efficiency(self.ids_to_coils(seq))
         ).generator()
         for sequence in gen:
-            yield self.ids_to_blades(sequence)
+            yield self.ids_to_coils(sequence)

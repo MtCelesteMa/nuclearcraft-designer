@@ -1,11 +1,14 @@
 """NuclearCraft: Overhauled turbine rotor blade sequence designer."""
 
 from . import RotorBlade, ROTOR_BLADE_TYPES
-from ...utils import scaled_calculator
+from ... import utils
 
 import uuid
 
-from ortools.sat.python import cp_model
+try:
+    from ortools.sat.python import cp_model
+except ImportError:
+    cp_model = None
 
 
 class RotorBladeSequenceDesigner:
@@ -22,7 +25,7 @@ class RotorBladeSequenceDesigner:
         """
         self.rotor_blade_types = rotor_blade_types
         self.scaling_factor = scaling_factor
-        self.sc = scaled_calculator.ScaledCalculator(self.scaling_factor)
+        self.sc = utils.scaled_calculator.ScaledCalculator(self.scaling_factor)
 
     def ids_to_blades(self, sequence: list[int]) -> list[RotorBlade]:
         """Converts a sequence of IDs to a sequence of rotor blades.
