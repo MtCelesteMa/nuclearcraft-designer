@@ -17,9 +17,11 @@ class DynamoCoil(utils.component.Component):
         :param conductivity: The conductivity of the dynamo coil.
         :param placement_rule: The placement rule of the dynamo coil.
         """
-        super().__init__(name)
-        self.conductivity = conductivity
-        self.placement_rule = placement_rule
+        super().__init__(name, {"conductivity": conductivity}, placement_rule)
+
+    @property
+    def conductivity(self) -> float:
+        return self.stats["conductivity"]
 
 
 CASING = DynamoCoil("casing", -1.0, utils.placement_rule.PlacementRule())

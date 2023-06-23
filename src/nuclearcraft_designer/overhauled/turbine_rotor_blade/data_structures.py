@@ -12,9 +12,18 @@ class RotorBlade(utils.component.Component):
         :param efficiency: The efficiency of the rotor blade.
         :param expansion: The expansion of the rotor blade.
         """
-        super().__init__(name)
-        self.efficiency = efficiency
-        self.expansion = expansion
+        super().__init__(name, {
+            "efficiency": efficiency,
+            "expansion": expansion
+        }, utils.placement_rule.PlacementRule())
+
+    @property
+    def efficiency(self) -> float:
+        return self.stats["efficiency"]
+
+    @property
+    def expansion(self) -> float:
+        return self.stats["expansion"]
 
 
 STEEL = RotorBlade("steel", 1.0, 1.4)
