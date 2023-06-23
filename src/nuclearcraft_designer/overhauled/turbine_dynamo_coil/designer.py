@@ -12,7 +12,7 @@ class DynamoCoilConfigurationDesigner:
             self,
             dynamo_coil_types: list[DynamoCoil] = DYNAMO_COIL_TYPES
     ) -> None:
-        """Constructs a RotorBladeSequenceDesigner object.
+        """Constructs a DynamoCoilConfigurationDesigner object.
 
         :param dynamo_coil_types: A list of dynamo coil types.
         """

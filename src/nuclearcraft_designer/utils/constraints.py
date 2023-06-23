@@ -116,6 +116,36 @@ class PlacementRuleConstraint(Constraint):
                     return False
         return True
 
+    def apply_to_model(
+            self,
+            model: cp_model.CpModel,
+            sequence: list[cp_model.IntVar],
+            component_types: list[component.Component],
+            **kwargs
+    ) -> None:
+        side_length = round(len(sequence) ** (1 / 2))
+        for i in range(len(sequence)):
+            x = i % side_length
+            y = i // side_length
+            up = sequence[i - side_length] if y > 0 else -1
+            right = sequence[i + 1] if x < side_length - 1 else -1
+            down = sequence[i + side_length] if y < side_length - 1 else -1
+            left = sequence[i - 1] if x > 0 else -1
+            satisfied_vars = [
+                component_type.placement_rule.to_model(
+                    model,
+                    [comp.name for comp in component_types],
+                    up,
+                    right,
+                    down,
+                    left
+                )
+                for component_type in component_types
+            ]
+            satisfied = model.NewBoolVar(str(uuid.uuid4()))
+            model.AddElement(sequence[i], satisfied_vars, satisfied)
+            model.Add(satisfied == 1)
+
 
 class CenteredBearingsConstraint(Constraint):
     """Ensures rotor bearings are centered."""
@@ -151,3 +181,31 @@ class CenteredBearingsConstraint(Constraint):
                             if sequence[x, y].name == "bearing":
                                 return False
         return True
+
+    def apply_to_model(
+            self,
+            model: cp_model.CpModel,
+            sequence: list[cp_model.IntVar],
+            component_types: list[component.Component],
+            **kwargs
+    ) -> None:
+        name_to_id = {comp.name: i for i, comp in enumerate(component_types)}
+        side_length = round(len(sequence) ** (1 / 2))
+        for i in range(len(sequence)):
+            x = i % side_length
+            y = i // side_length
+            if side_length % 2:
+                mid = (side_length - 1) // 2
+                r = (self.shaft_width - 1) // 2
+                if mid - r <= x <= mid + r and mid - r <= y <= mid + r:
+                    model.Add(sequence[i] == name_to_id["bearing"])
+                else:
+                    model.Add(sequence[i] != name_to_id["bearing"])
+            else:
+                mid = side_length // 2 - 1
+                r_left = self.shaft_width // 2 - 1
+                r_right = self.shaft_width // 2
+                if mid - r_left <= x <= mid + r_right and mid - r_left <= y <= mid + r_right:
+                    model.Add(sequence[i] == name_to_id["bearing"])
+                else:
+                    model.Add(sequence[i] != name_to_id["bearing"])

@@ -1,6 +1,12 @@
 """Placement rules for NuclearCraft reactors and turbines."""
 
 import enum
+import uuid
+
+try:
+    from ortools.sat.python import cp_model
+except ImportError:
+    cp_model = None
 
 
 class LogicMode(enum.Enum):
@@ -22,6 +28,33 @@ class PlacementRule:
         :return: True if the rule is satisfied, false otherwise.
         """
         return True
+
+    def to_model(
+            self,
+            model: cp_model.CpModel,
+            component_types: list[str],
+            up: cp_model.IntVar,
+            right: cp_model.IntVar,
+            down: cp_model.IntVar,
+            left: cp_model.IntVar,
+            front: cp_model.IntVar = -1,
+            back: cp_model.IntVar = -1
+    ) -> cp_model.IntVar:
+        """Registers the placement rule to a CP-SAT model.
+
+        :param model: The CP-SAT model to register the placement rule to.
+        :param component_types: A list of component type names.
+        :param up: An IntVar representing the component above.
+        :param right: An IntVar representing the component to the right.
+        :param down: An IntVar representing the component below.
+        :param left: An IntVar representing the component to the left.
+        :param front: An IntVar representing the component to the right.
+        :param back: An IntVar representing the component behind.
+        :return: An IntVar representing whether the placement rule is satisfied.
+        """
+        satisfied = model.NewBoolVar(str(uuid.uuid4()))
+        model.Add(satisfied == 1)
+        return satisfied
 
 
 class SimplePlacementRule(PlacementRule):
@@ -67,6 +100,61 @@ class SimplePlacementRule(PlacementRule):
             return False
         return True
 
+    def to_model(
+            self,
+            model: cp_model.CpModel,
+            component_types: list[str],
+            up: cp_model.IntVar,
+            right: cp_model.IntVar,
+            down: cp_model.IntVar,
+            left: cp_model.IntVar,
+            front: cp_model.IntVar = -1,
+            back: cp_model.IntVar = -1
+    ) -> cp_model.IntVar:
+        name_to_id = {comp: i for i, comp in enumerate(component_types)}
+        components = (up, right, down, left, front, back)
+
+        quantity = [model.NewIntVar(0, 6, str(uuid.uuid4())) for _ in range(6)]
+        matches = [model.NewBoolVar(str(uuid.uuid4())) for _ in range(6)]
+        for i in range(6):
+            model.Add(components[i] == name_to_id[self.name]).OnlyEnforceIf(matches[i])
+            model.Add(components[i] != name_to_id[self.name]).OnlyEnforceIf(matches[i].Not())
+
+            quantity_prev = quantity[i - 1] if i > 0 else 0
+            model.Add(quantity[i] == quantity_prev + 1).OnlyEnforceIf(matches[i])
+            model.Add(quantity[i] == quantity_prev).OnlyEnforceIf(matches[i].Not())
+
+        axials = [model.NewBoolVar(str(uuid.uuid4())) for _ in range(3)]
+        model.AddBoolAnd([matches[0], matches[2]]).OnlyEnforceIf(axials[0])
+        model.AddBoolOr([matches[0].Not(), matches[2].Not()]).OnlyEnforceIf(axials[0].Not())
+
+        model.AddBoolAnd([matches[1], matches[3]]).OnlyEnforceIf(axials[1])
+        model.AddBoolOr([matches[1].Not(), matches[3].Not()]).OnlyEnforceIf(axials[1].Not())
+
+        model.AddBoolAnd([matches[4], matches[5]]).OnlyEnforceIf(axials[2])
+        model.AddBoolOr([matches[4].Not(), matches[5].Not()]).OnlyEnforceIf(axials[2].Not())
+
+        axial = model.NewBoolVar(str(uuid.uuid4()))
+        model.AddBoolOr(axials).OnlyEnforceIf(axial)
+        model.AddBoolAnd([axial_.Not() for axial_ in axials]).OnlyEnforceIf(axial.Not())
+
+        satisfied = model.NewBoolVar(str(uuid.uuid4()))
+        if self.axial:
+            if self.exact:
+                model.Add(axial and quantity[-1] == self.quantity).OnlyEnforceIf(satisfied)
+                model.Add(axial.Not() or quantity[-1] != self.quantity).OnlyEnforceIf(satisfied.Not())
+            else:
+                model.Add(axial and quantity[-1] >= self.quantity).OnlyEnforceIf(satisfied)
+                model.Add(axial.Not() or quantity[-1] < self.quantity).OnlyEnforceIf(satisfied.Not())
+        else:
+            if self.exact:
+                model.Add(quantity[-1] == self.quantity).OnlyEnforceIf(satisfied)
+                model.Add(quantity[-1] != self.quantity).OnlyEnforceIf(satisfied.Not())
+            else:
+                model.Add(quantity[-1] >= self.quantity).OnlyEnforceIf(satisfied)
+                model.Add(quantity[-1] < self.quantity).OnlyEnforceIf(satisfied.Not())
+        return satisfied
+
 
 class CompoundPlacementRule(PlacementRule):
     """Placement rule depending on the satisfaction of other placement rules."""
@@ -90,3 +178,27 @@ class CompoundPlacementRule(PlacementRule):
                 if rule(up, right, down, left, front, back):
                     return True
             return False
+
+    def to_model(
+            self,
+            model: cp_model.CpModel,
+            component_types: list[str],
+            up: cp_model.IntVar,
+            right: cp_model.IntVar,
+            down: cp_model.IntVar,
+            left: cp_model.IntVar,
+            front: cp_model.IntVar = -1,
+            back: cp_model.IntVar = -1
+    ) -> cp_model.IntVar:
+        satisfied_vars = [
+            rule.to_model(model, component_types, up, right, down, left, front, back)
+            for rule in self.rules
+        ]
+        satisfied = model.NewBoolVar(str(uuid.uuid4()))
+        if self.mode == LogicMode.AND:
+            model.Add(sum(satisfied_vars) >= len(satisfied_vars)).OnlyEnforceIf(satisfied)
+            model.Add(sum(satisfied_vars) < len(satisfied_vars)).OnlyEnforceIf(satisfied.Not())
+        else:
+            model.Add(sum(satisfied_vars) > 0).OnlyEnforceIf(satisfied)
+            model.Add(sum(satisfied_vars) == 0).OnlyEnforceIf(satisfied.Not())
+        return satisfied
