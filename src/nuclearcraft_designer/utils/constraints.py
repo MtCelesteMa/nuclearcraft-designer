@@ -2,6 +2,13 @@
 
 from . import component, ndim_sequence
 
+import uuid
+
+try:
+    from ortools.sat.python import cp_model
+except ImportError:
+    cp_model = None
+
 
 class Constraint:
     """Constraints for optimizers."""
@@ -17,6 +24,22 @@ class Constraint:
         :return: True if the constraint is satisfied, false otherwise.
         """
         return True
+
+    def apply_to_model(
+            self,
+            model: cp_model.CpModel,
+            sequence: list[cp_model.IntVar],
+            component_types: list[component.Component],
+            **kwargs
+    ) -> None:
+        """Applies constraint to a CP-SAT model.
+
+        :param model: The CP-SAT model to apply the constraint to.
+        :param sequence: A list of IntVars representing rotor blade IDs.
+        :param component_types: A list of component types.
+        :param kwargs: Other required parameters.
+        """
+        raise NotImplementedError("This constraint does not support CP-SAT models!")
 
 
 class MaxQuantityConstraint(Constraint):
@@ -42,6 +65,29 @@ class MaxQuantityConstraint(Constraint):
             if component.name == self.target_name:
                 n += 1
         return n <= self.max_quantity
+
+    def apply_to_model(
+            self,
+            model: cp_model.CpModel,
+            sequence: list[cp_model.IntVar],
+            component_types: list[component.Component],
+            **kwargs
+    ) -> None:
+        target_id = -1
+        for i, component_type in enumerate(component_types):
+            if component_type.name == self.target_name:
+                target_id = i
+                break
+        quantity = [model.NewIntVar(0, len(sequence), str(uuid.uuid4())) for _ in range(len(sequence))]
+        for i in range(len(sequence)):
+            match = model.NewBoolVar(str(uuid.uuid4()))
+            model.Add(sequence[i] == target_id).OnlyEnforceIf(match)
+            model.Add(sequence[i] != target_id).OnlyEnforceIf(match.Not())
+
+            quantity_prev = quantity[i - 1] if i > 0 else 0
+            model.Add(quantity[i] == quantity_prev + 1).OnlyEnforceIf(match)
+            model.Add(quantity[i] == quantity_prev).OnlyEnforceIf(match.Not())
+        model.Add(quantity[-1] <= self.max_quantity)
 
 
 class PlacementRuleConstraint(Constraint):

@@ -180,12 +180,14 @@ class RotorBladeSequenceDesigner:
             self,
             length: int,
             opt_expansion: float,
+            type_limits: dict[str, int],
             time_limit: float = None
     ) -> tuple[int, list[RotorBlade]]:
         """Designs the optimal sequence of rotor blades if possible.
 
         :param length: The length of the rotor blade sequence.
         :param opt_expansion: The expansion level to optimize for.
+        :param type_limits: The maximum number of each type of rotor blade.
         :param time_limit: The maximum time in seconds to run for.
         :return: The status as well as a sequence of rotor blades.
         """
@@ -196,6 +198,13 @@ class RotorBladeSequenceDesigner:
         expansion_levels = self.expansion_levels(model, expansions, expansions_sqrt)
 
         total_efficiency = self.total_efficiency(model, efficiencies, expansion_levels, opt_expansion)
+
+        for target_name, quantity in type_limits.items():
+            utils.constraints.MaxQuantityConstraint(target_name, quantity).apply_to_model(
+                model,
+                blades,
+                self.rotor_blade_types
+            )
 
         model.Maximize(total_efficiency)
 
