@@ -29,59 +29,6 @@ class DynamoCoilConfigurationDesigner:
             for i in sequence
         ], round(len(sequence) ** (1 / 2)))
 
-    def centered_bearings_constraint(self, sequence: list[int], shaft_width: int) -> bool:
-        """Determines whether the bearings are centered.
-
-        :param sequence: A sequence of IDs.
-        :param shaft_width: The width of the shaft.
-        :return: True if the bearings are centered, false otherwise.
-        """
-        configuration = self.ids_to_coils(sequence)
-        for x in range(configuration.cols):
-            for y in range(configuration.cols):
-                if configuration.cols % 2:
-                    mid = (configuration.cols - 1) // 2
-                    r = (shaft_width - 1) // 2
-                    if mid - r <= x <= mid + r and mid - r <= y <= mid + r:
-                        if not isinstance(configuration[x, y], type(None)) and configuration[x, y].name != "bearing":
-                            return False
-                    else:
-                        if not isinstance(configuration[x, y], type(None)):
-                            if configuration[x, y].name == "bearing":
-                                return False
-                else:
-                    mid = configuration.cols // 2 - 1
-                    r_left = shaft_width // 2 - 1
-                    r_right = shaft_width // 2
-                    if mid - r_left <= x <= mid + r_right and mid - r_left <= y <= mid + r_right:
-                        if not isinstance(configuration[x, y], type(None)) and configuration[x, y].name != "bearing":
-                            return False
-                    else:
-                        if not isinstance(configuration[x, y], type(None)):
-                            if configuration[x, y].name == "bearing":
-                                return False
-        return True
-
-    def coil_name(self, coil: DynamoCoil | None) -> str:
-        return "incomplete" if isinstance(coil, type(None)) else coil.name
-
-    def placement_rule_constraint(self, sequence: list[int]) -> bool:
-        """Determines whether all dynamo coils follow placement rules.
-
-        :param sequence: A sequence of IDs.
-        :return: True if all dynamo coils follow placement rules, false otherwise.
-        """
-        configuration = self.ids_to_coils(sequence)
-        for x in range(configuration.cols):
-            for y in range(configuration.cols):
-                up = self.coil_name(configuration[x, y - 1]) if y > 0 else "wall"
-                right = self.coil_name(configuration[x + 1, y]) if x < configuration.cols - 1 else "wall"
-                down = self.coil_name(configuration[x, y + 1]) if y < configuration.cols - 1 else "wall"
-                left = self.coil_name(configuration[x - 1, y]) if x > 0 else "wall"
-                if not isinstance(configuration[x, y], type(None)) and not configuration[x, y].placement_rule(up, right, down, left):
-                    return False
-        return True
-
     def total_efficiency(self, sequence: utils.ndim_sequence.Sequence2D[DynamoCoil]) -> float:
         """Calculates the total efficiency of a sequence of dynamo coils.
 
@@ -114,10 +61,10 @@ class DynamoCoilConfigurationDesigner:
                 side_length ** 2,
                 len(self.dynamo_coil_types),
                 [
-                    lambda seq: self.centered_bearings_constraint(seq, shaft_width),
-                    self.placement_rule_constraint
+                    lambda seq: utils.constraints.CenteredBearingsConstraint(shaft_width)(self.ids_to_coils(seq)),
+                    lambda seq: utils.constraints.PlacementRuleConstraint()(self.ids_to_coils(seq))
                 ] + [
-                    lambda seq: constraint(list(self.ids_to_coils(seq)))
+                    lambda seq: constraint(self.ids_to_coils(seq))
                     for constraint in constraints
                 ]
             ).generator(),

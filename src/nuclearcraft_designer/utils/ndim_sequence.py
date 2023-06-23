@@ -17,6 +17,10 @@ class Sequence2D(typing.Generic[E], typing.Iterable[E]):
         self.rep = rep
         self.cols = cols
 
+    @property
+    def rows(self) -> int:
+        return len(self.rep) // self.cols
+
     def __len__(self) -> int:
         """Get the total number of elements
 
