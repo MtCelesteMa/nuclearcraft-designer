@@ -45,7 +45,6 @@ class Constraint:
 
 class MaxQuantityConstraint(Constraint):
     """Limits the quantity of a given component."""
-
     def __init__(self, target_name: str, max_quantity: int) -> None:
         """Constructs a MaxQuantityConstraint object.
 
@@ -94,12 +93,68 @@ class MaxQuantityConstraint(Constraint):
 
 
 class SymmetryConstraint(Constraint):
-    """Forces the sequence to be symmetric."""
+    """Forces the sequence to be symmetric on all dimensions."""
+    def __call__(self, sequence: multi_sequence.MultiSequence[component.Component], **kwargs) -> bool:
+        if len(sequence.dims) == 2:
+            for y in range(sequence.dims[0]):
+                for x in range(sequence.dims[1]):
+                    if (
+                        isinstance(sequence[y, x], type(None))
+                        or isinstance(sequence[sequence.dims[0] - y - 1, x], type(None))
+                        or isinstance(sequence[y, sequence.dims[1] - x - 1], type(None))
+                    ):
+                        continue
+                    if (
+                        sequence[y, x].name != sequence[sequence.dims[0] - y - 1, x].name
+                        or sequence[y, x].name != sequence[y, sequence.dims[1] - x - 1].name
+                    ):
+                        return False
+            return True
+        elif len(sequence.dims) == 3:
+            for x in range(sequence.dims[0]):
+                for y in range(sequence.dims[1]):
+                    for z in range(sequence.dims[2]):
+                        if (
+                            isinstance(sequence[x, y, z], type(None))
+                            or isinstance(sequence[sequence.dims[0] - x - 1, y, z], type(None))
+                            or isinstance(sequence[x, sequence.dims[1] - y - 1, z], type(None))
+                            or isinstance(sequence[x, y, sequence.dims[2] - z - 1], type(None))
+                        ):
+                            continue
+                        if (
+                            sequence[x, y, z].name != sequence[sequence.dims[0] - x - 1, y, z].name
+                            or sequence[x, y, z].name != sequence[x, sequence.dims[1] - y - 1, z].name
+                            or sequence[x, y, z].name != sequence[x, y, sequence.dims[2] - z - 1].name
+                        ):
+                            return False
+            return True
+        raise NotImplementedError("Symmetry constraint only available for 2 or 3 dimensions!")
+
+    def apply_to_model(
+            self,
+            model: cp_model.CpModel,
+            sequence: multi_sequence.MultiSequence[cp_model.IntVar],
+            component_types: list[component.Component],
+            **kwargs
+    ) -> None:
+        if len(sequence.dims) == 2:
+            for y in range(sequence.dims[0]):
+                for x in range(sequence.dims[1]):
+                    model.Add(sequence[y, x] == sequence[sequence.dims[0] - y - 1, x])
+                    model.Add(sequence[y, x] == sequence[y, sequence.dims[1] - x - 1])
+        elif len(sequence.dims) == 3:
+            for x in range(sequence.dims[0]):
+                for y in range(sequence.dims[1]):
+                    for z in range(sequence.dims[2]):
+                        model.Add(sequence[x, y, z] == sequence[sequence.dims[0] - x - 1, y, z])
+                        model.Add(sequence[x, y, z] == sequence[x, sequence.dims[1] - y - 1, z])
+                        model.Add(sequence[x, y, z] == sequence[x, y, sequence.dims[2] - z - 1])
+        else:
+            raise NotImplementedError("Symmetry constraint only available for 2 or 3 dimensions!")
 
 
 class PlacementRuleConstraint(Constraint):
     """Enforces component placement rules."""
-
     def component_name(self, comp: component.Component | None) -> str:
         """Returns the name of the component, or "incomplete" if None.
 
@@ -155,7 +210,6 @@ class PlacementRuleConstraint(Constraint):
 
 class CenteredBearingsConstraint(Constraint):
     """Ensures rotor bearings are centered."""
-
     def __init__(self, shaft_width: int) -> None:
         """Constructs a CenteredBearingsConstraint object.
 

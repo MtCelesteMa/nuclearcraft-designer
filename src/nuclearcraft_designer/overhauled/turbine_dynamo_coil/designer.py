@@ -48,13 +48,15 @@ class DynamoCoilConfigurationDesigner:
             self,
             side_length: int,
             shaft_width: int,
-            type_limits: dict[str, int]
+            type_limits: dict[str, int],
+            symmetric: bool = False
     ) -> typing.Generator[common.multi_sequence.MultiSequence[DynamoCoil], None, None]:
         """Constructs a generator that iteratively generates better dynamo coil sequences.
 
         :param side_length: The side length of the turbine.
         :param shaft_width: The width of the rotor shaft.
         :param type_limits: The maximum number of each type of dynamo coil.
+        :param symmetric: Whether to force the result to be symmetric.
         :return: A generator object.
         """
         gen = utils.optimizer.SequenceOptimizer(
@@ -67,7 +69,9 @@ class DynamoCoilConfigurationDesigner:
                 ] + [
                     lambda seq: common.constraints.MaxQuantityConstraint(target_name, quantity)(self.ids_to_coils(seq))
                     for target_name, quantity in type_limits.items()
-                ]
+                ] + ([
+                    lambda seq: common.constraints.SymmetryConstraint()(self.ids_to_coils(seq))
+                ] if symmetric else [])
             ).generator(),
             lambda seq: self.total_efficiency(self.ids_to_coils(seq))
         ).generator()

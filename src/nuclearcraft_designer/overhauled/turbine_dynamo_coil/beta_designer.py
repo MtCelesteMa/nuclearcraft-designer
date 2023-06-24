@@ -108,6 +108,7 @@ class DynamoCoilConfigurationDesigner:
             side_length: int,
             shaft_width: int,
             type_limits: dict[str, int],
+            symmetric: bool = False,
             time_limit: float = None
     ) -> tuple[int, common.multi_sequence.MultiSequence[DynamoCoil]]:
         """Designs the optimal dynamo coil configuration if possible.
@@ -115,6 +116,7 @@ class DynamoCoilConfigurationDesigner:
         :param side_length: The side length of the turbine.
         :param shaft_width: The width of the rotor shaft.
         :param type_limits: The maximum number of each type of dynamo coil.
+        :param symmetric: Whether to force the result to be symmetric.
         :param time_limit: The maximum time in seconds to run for.
         :return: The status as well as a dynamo coil configuration.
         """
@@ -126,6 +128,13 @@ class DynamoCoilConfigurationDesigner:
 
         for target_name, quantity in type_limits.items():
             common.constraints.MaxQuantityConstraint(target_name, quantity).apply_to_model(
+                model,
+                coils,
+                self.dynamo_coil_types
+            )
+
+        if symmetric:
+            common.constraints.SymmetryConstraint().apply_to_model(
                 model,
                 coils,
                 self.dynamo_coil_types
