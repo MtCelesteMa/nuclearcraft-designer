@@ -25,13 +25,13 @@ class DynamoCoilConfigurationDesigner:
         self.scaling_factor = scaling_factor
         self.sc = utils.scaled_calculator.ScaledCalculator(self.scaling_factor)
 
-    def ids_to_coils(self, sequence: list[int]) -> common.ndim_sequence.Sequence2D[DynamoCoil]:
+    def ids_to_coils(self, sequence: list[int]) -> common.multi_sequence.Sequence2D[DynamoCoil]:
         """Converts a sequence of IDs to a sequence of rotor blades.
 
         :param sequence: A sequence of IDs.
         :return: A sequence of rotor blades.
         """
-        return common.ndim_sequence.Sequence2D([
+        return common.multi_sequence.Sequence2D([
             self.dynamo_coil_types[i] if i >= 0 else None
             for i in sequence
         ], round(len(sequence) ** (1 / 2)))
@@ -107,7 +107,7 @@ class DynamoCoilConfigurationDesigner:
             shaft_width: int,
             type_limits: dict[str, int],
             time_limit: float = None
-    ) -> tuple[int, common.ndim_sequence.Sequence2D[DynamoCoil]]:
+    ) -> tuple[int, common.multi_sequence.Sequence2D[DynamoCoil]]:
         """Designs the optimal dynamo coil configuration if possible.
 
         :param side_length: The side length of the turbine.

@@ -1,7 +1,7 @@
 """Constraints for NuclearCraft Designer"""
 
-from src.nuclearcraft_designer.common import ndim_sequence
-from src.nuclearcraft_designer.common import component
+from . import multi_sequence
+from . import component
 
 import uuid
 
@@ -15,7 +15,7 @@ class Constraint:
     """Constraints for optimizers."""
     def __call__(
             self,
-            sequence: list[component.Component] | ndim_sequence.Sequence2D[component.Component],
+            sequence: list[component.Component] | multi_sequence.Sequence2D[component.Component],
             **kwargs
     ) -> bool:
         """Determines whether the sequence satisfies the constraint.
@@ -89,6 +89,10 @@ class MaxQuantityConstraint(Constraint):
             model.Add(quantity[i] == quantity_prev + 1).OnlyEnforceIf(match)
             model.Add(quantity[i] == quantity_prev).OnlyEnforceIf(match.Not())
         model.Add(quantity[-1] <= self.max_quantity)
+
+
+class SymmetryConstraint(Constraint):
+    """Forces the sequence to be symmetric."""
 
 
 class PlacementRuleConstraint(Constraint):

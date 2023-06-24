@@ -1,6 +1,6 @@
 """NuclearCraft reactor/turbine components."""
 
-from src.nuclearcraft_designer.common import placement_rule
+from . import placement_rule
 
 
 class Component:
