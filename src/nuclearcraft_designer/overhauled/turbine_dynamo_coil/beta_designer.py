@@ -25,19 +25,20 @@ class DynamoCoilConfigurationDesigner:
         self.scaling_factor = scaling_factor
         self.sc = utils.scaled_calculator.ScaledCalculator(self.scaling_factor)
 
-    def ids_to_coils(self, sequence: list[int]) -> common.multi_sequence.Sequence2D[DynamoCoil]:
+    def ids_to_coils(self, sequence: list[int]) -> common.multi_sequence.MultiSequence[DynamoCoil]:
         """Converts a sequence of IDs to a sequence of rotor blades.
 
         :param sequence: A sequence of IDs.
         :return: A sequence of rotor blades.
         """
-        return common.multi_sequence.Sequence2D([
+        side_length = round(len(sequence) ** (1 / 2))
+        return common.multi_sequence.MultiSequence([
             self.dynamo_coil_types[i] if i >= 0 else None
             for i in sequence
-        ], round(len(sequence) ** (1 / 2)))
+        ], (side_length, side_length))
 
     def coil_attributes(self, model: cp_model.CpModel, n_coils: int) -> tuple[
-        list[cp_model.IntVar], list[cp_model.IntVar]
+        common.multi_sequence.MultiSequence[cp_model.IntVar], list[cp_model.IntVar]
     ]:
         """Registers dynamo coils as well as their attributes to the model.
 
@@ -60,7 +61,8 @@ class DynamoCoilConfigurationDesigner:
                 for coil_type in self.dynamo_coil_types
             ], conductivity)
 
-        return coils, conductivities
+        side_length = round(n_coils ** (1 / 2))
+        return common.multi_sequence.MultiSequence(coils, (side_length, side_length)), conductivities
 
     def total_efficiency(self, model: cp_model.CpModel, conductivities: list[cp_model.IntVar]) -> cp_model.IntVar:
         """Calculates the total efficiency of a dynamo coil configuration.
@@ -107,7 +109,7 @@ class DynamoCoilConfigurationDesigner:
             shaft_width: int,
             type_limits: dict[str, int],
             time_limit: float = None
-    ) -> tuple[int, common.multi_sequence.Sequence2D[DynamoCoil]]:
+    ) -> tuple[int, common.multi_sequence.MultiSequence[DynamoCoil]]:
         """Designs the optimal dynamo coil configuration if possible.
 
         :param side_length: The side length of the turbine.

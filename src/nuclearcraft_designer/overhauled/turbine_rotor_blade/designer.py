@@ -18,18 +18,18 @@ class RotorBladeSequenceDesigner:
         """
         self.rotor_blade_types = rotor_blade_types
 
-    def ids_to_blades(self, sequence: list[int]) -> list[RotorBlade]:
+    def ids_to_blades(self, sequence: list[int]) -> common.multi_sequence.MultiSequence[RotorBlade]:
         """Converts a sequence of IDs to a sequence of rotor blades.
 
         :param sequence: A sequence of IDs.
         :return: A sequence of rotor blades.
         """
-        return [
+        return common.multi_sequence.MultiSequence([
             self.rotor_blade_types[i] if i >= 0 else None
             for i in sequence
-        ]
+        ], (len(sequence),))
 
-    def expansion_levels(self, sequence: list[RotorBlade]) -> list[float]:
+    def expansion_levels(self, sequence: common.multi_sequence.MultiSequence[RotorBlade]) -> list[float]:
         """Calculates the expansion levels of a sequence of rotor blades.
 
         :param sequence: A sequence of rotor blades.
@@ -42,7 +42,11 @@ class RotorBladeSequenceDesigner:
             total_expansion_level *= rotor_blade.expansion
         return expansion_levels
 
-    def total_efficiency(self, sequence: list[RotorBlade], opt_expansion: float) -> float:
+    def total_efficiency(
+            self,
+            sequence: common.multi_sequence.MultiSequence[RotorBlade],
+            opt_expansion: float
+    ) -> float:
         """Calculates the total efficiency of a sequence of rotor blades.
 
         :param sequence: A sequence of rotor blades.

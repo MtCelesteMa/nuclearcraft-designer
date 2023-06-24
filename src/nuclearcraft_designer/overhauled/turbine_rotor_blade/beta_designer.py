@@ -27,19 +27,22 @@ class RotorBladeSequenceDesigner:
         self.scaling_factor = scaling_factor
         self.sc = utils.scaled_calculator.ScaledCalculator(self.scaling_factor)
 
-    def ids_to_blades(self, sequence: list[int]) -> list[RotorBlade]:
+    def ids_to_blades(self, sequence: list[int]) -> common.multi_sequence.MultiSequence[RotorBlade]:
         """Converts a sequence of IDs to a sequence of rotor blades.
 
         :param sequence: A sequence of IDs.
         :return: A sequence of rotor blades.
         """
-        return [
+        return common.multi_sequence.MultiSequence([
             self.rotor_blade_types[i] if i >= 0 else None
             for i in sequence
-        ]
+        ], (len(sequence),))
 
     def blade_attributes(self, model: cp_model.CpModel, n_blades: int) -> tuple[
-        list[cp_model.IntVar], list[cp_model.IntVar], list[cp_model.IntVar], list[cp_model.IntVar]
+        common.multi_sequence.MultiSequence[cp_model.IntVar],
+        list[cp_model.IntVar],
+        list[cp_model.IntVar],
+        list[cp_model.IntVar]
     ]:
         """Registers rotor blades as well as their attributes to the model.
 
@@ -83,7 +86,7 @@ class RotorBladeSequenceDesigner:
                 for blade_type in self.rotor_blade_types
             ], expansion_sqrt)
 
-        return blades, efficiencies, expansions, expansions_sqrt
+        return common.multi_sequence.MultiSequence(blades, (len(blades),)), efficiencies, expansions, expansions_sqrt
 
     def expansion_levels(
             self,
@@ -182,7 +185,7 @@ class RotorBladeSequenceDesigner:
             opt_expansion: float,
             type_limits: dict[str, int],
             time_limit: float = None
-    ) -> tuple[int, list[RotorBlade]]:
+    ) -> tuple[int, common.multi_sequence.MultiSequence[RotorBlade]]:
         """Designs the optimal sequence of rotor blades if possible.
 
         :param length: The length of the rotor blade sequence.

@@ -18,18 +18,19 @@ class DynamoCoilConfigurationDesigner:
         """
         self.dynamo_coil_types = dynamo_coil_types
 
-    def ids_to_coils(self, sequence: list[int]) -> common.multi_sequence.Sequence2D[DynamoCoil]:
+    def ids_to_coils(self, sequence: list[int]) -> common.multi_sequence.MultiSequence[DynamoCoil]:
         """Converts a sequence of IDs to a sequence of rotor blades.
 
         :param sequence: A sequence of IDs.
         :return: A sequence of rotor blades.
         """
-        return common.multi_sequence.Sequence2D([
+        side_length = round(len(sequence) ** (1 / 2))
+        return common.multi_sequence.MultiSequence([
             self.dynamo_coil_types[i] if i >= 0 else None
             for i in sequence
-        ], round(len(sequence) ** (1 / 2)))
+        ], (side_length, side_length))
 
-    def total_efficiency(self, sequence: common.multi_sequence.Sequence2D[DynamoCoil]) -> float:
+    def total_efficiency(self, sequence: common.multi_sequence.MultiSequence[DynamoCoil]) -> float:
         """Calculates the total efficiency of a sequence of dynamo coils.
 
         :param sequence: A sequence of dynamo coils.
@@ -48,7 +49,7 @@ class DynamoCoilConfigurationDesigner:
             side_length: int,
             shaft_width: int,
             type_limits: dict[str, int]
-    ) -> typing.Generator[common.multi_sequence.Sequence2D[DynamoCoil], None, None]:
+    ) -> typing.Generator[common.multi_sequence.MultiSequence[DynamoCoil], None, None]:
         """Constructs a generator that iteratively generates better dynamo coil sequences.
 
         :param side_length: The side length of the turbine.

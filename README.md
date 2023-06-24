@@ -45,9 +45,9 @@ if __name__ == "__main__":
     for seq in gen:
         pass
 
-    for y in range(seq.cols):
-        for x in range(seq.cols):
-            print(seq[x, y].name, end=" ")
+    for y in range(seq.dims[0]):
+        for x in range(seq.dims[1]):
+            print(seq[y, x].name, end=" ")
         print()
 ```
 
@@ -88,8 +88,8 @@ if __name__ == "__main__":
         }
     )
     print(status)
-    for y in range(configuration.cols):
-        for x in range(configuration.cols):
-            print(configuration[x, y].name, end=" ")
+    for y in range(configuration.dims[0]):
+        for x in range(configuration.dims[1]):
+            print(configuration[y, x].name, end=" ")
         print()
 ```
