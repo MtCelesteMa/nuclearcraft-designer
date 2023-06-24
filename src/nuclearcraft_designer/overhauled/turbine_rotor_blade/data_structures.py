@@ -1,9 +1,9 @@
 """NuclearCraft: Overhauled turbine rotor blades."""
 
-from ... import utils
+from ... import common
 
 
-class RotorBlade(utils.component.Component):
+class RotorBlade(common.component.Component):
     """An object representing a NuclearCraft: Overhauled turbine rotor blade."""
     def __init__(self, name: str, efficiency: float, expansion: float) -> None:
         """Constructs a RotorBlade object.
@@ -15,7 +15,7 @@ class RotorBlade(utils.component.Component):
         super().__init__(name, {
             "efficiency": efficiency,
             "expansion": expansion
-        }, utils.placement_rule.PlacementRule())
+        }, common.placement_rule.PlacementRule())
 
     @property
     def efficiency(self) -> float:

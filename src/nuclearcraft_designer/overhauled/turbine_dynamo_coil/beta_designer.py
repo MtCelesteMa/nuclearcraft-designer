@@ -1,9 +1,7 @@
 """NuclearCraft: Overhauled turbine dynamo coil configuration designer."""
 
 from . import DynamoCoil, DYNAMO_COIL_TYPES
-from ... import utils
-
-import uuid
+from ... import utils, common
 
 try:
     from ortools.sat.python import cp_model
@@ -27,13 +25,13 @@ class DynamoCoilConfigurationDesigner:
         self.scaling_factor = scaling_factor
         self.sc = utils.scaled_calculator.ScaledCalculator(self.scaling_factor)
 
-    def ids_to_coils(self, sequence: list[int]) -> utils.ndim_sequence.Sequence2D[DynamoCoil]:
+    def ids_to_coils(self, sequence: list[int]) -> common.ndim_sequence.Sequence2D[DynamoCoil]:
         """Converts a sequence of IDs to a sequence of rotor blades.
 
         :param sequence: A sequence of IDs.
         :return: A sequence of rotor blades.
         """
-        return utils.ndim_sequence.Sequence2D([
+        return common.ndim_sequence.Sequence2D([
             self.dynamo_coil_types[i] if i >= 0 else None
             for i in sequence
         ], round(len(sequence) ** (1 / 2)))
@@ -109,7 +107,7 @@ class DynamoCoilConfigurationDesigner:
             shaft_width: int,
             type_limits: dict[str, int],
             time_limit: float = None
-    ) -> tuple[int, utils.ndim_sequence.Sequence2D[DynamoCoil]]:
+    ) -> tuple[int, common.ndim_sequence.Sequence2D[DynamoCoil]]:
         """Designs the optimal dynamo coil configuration if possible.
 
         :param side_length: The side length of the turbine.
@@ -125,19 +123,19 @@ class DynamoCoilConfigurationDesigner:
         total_efficiency = self.total_efficiency(model, conductivities)
 
         for target_name, quantity in type_limits.items():
-            utils.constraints.MaxQuantityConstraint(target_name, quantity).apply_to_model(
+            common.constraints.MaxQuantityConstraint(target_name, quantity).apply_to_model(
                 model,
                 coils,
                 self.dynamo_coil_types
             )
 
-        utils.constraints.CenteredBearingsConstraint(shaft_width).apply_to_model(
+        common.constraints.CenteredBearingsConstraint(shaft_width).apply_to_model(
             model,
             coils,
             self.dynamo_coil_types
         )
 
-        utils.constraints.PlacementRuleConstraint().apply_to_model(
+        common.constraints.PlacementRuleConstraint().apply_to_model(
             model,
             coils,
             self.dynamo_coil_types

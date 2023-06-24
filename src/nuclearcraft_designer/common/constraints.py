@@ -1,6 +1,7 @@
 """Constraints for NuclearCraft Designer"""
 
-from . import component, ndim_sequence
+from src.nuclearcraft_designer.common import ndim_sequence
+from src.nuclearcraft_designer.common import component
 
 import uuid
 

@@ -1,7 +1,7 @@
 """NuclearCraft: Overhauled turbine dynamo coil configuration designer."""
 
 from . import DynamoCoil, DYNAMO_COIL_TYPES
-from ... import utils
+from ... import utils, common
 
 import typing
 
@@ -18,18 +18,18 @@ class DynamoCoilConfigurationDesigner:
         """
         self.dynamo_coil_types = dynamo_coil_types
 
-    def ids_to_coils(self, sequence: list[int]) -> utils.ndim_sequence.Sequence2D[DynamoCoil]:
+    def ids_to_coils(self, sequence: list[int]) -> common.ndim_sequence.Sequence2D[DynamoCoil]:
         """Converts a sequence of IDs to a sequence of rotor blades.
 
         :param sequence: A sequence of IDs.
         :return: A sequence of rotor blades.
         """
-        return utils.ndim_sequence.Sequence2D([
+        return common.ndim_sequence.Sequence2D([
             self.dynamo_coil_types[i] if i >= 0 else None
             for i in sequence
         ], round(len(sequence) ** (1 / 2)))
 
-    def total_efficiency(self, sequence: utils.ndim_sequence.Sequence2D[DynamoCoil]) -> float:
+    def total_efficiency(self, sequence: common.ndim_sequence.Sequence2D[DynamoCoil]) -> float:
         """Calculates the total efficiency of a sequence of dynamo coils.
 
         :param sequence: A sequence of dynamo coils.
@@ -48,7 +48,7 @@ class DynamoCoilConfigurationDesigner:
             side_length: int,
             shaft_width: int,
             type_limits: dict[str, int]
-    ) -> typing.Generator[utils.ndim_sequence.Sequence2D[DynamoCoil], None, None]:
+    ) -> typing.Generator[common.ndim_sequence.Sequence2D[DynamoCoil], None, None]:
         """Constructs a generator that iteratively generates better dynamo coil sequences.
 
         :param side_length: The side length of the turbine.
@@ -61,10 +61,10 @@ class DynamoCoilConfigurationDesigner:
                 side_length ** 2,
                 len(self.dynamo_coil_types),
                 [
-                    lambda seq: utils.constraints.CenteredBearingsConstraint(shaft_width)(self.ids_to_coils(seq)),
-                    lambda seq: utils.constraints.PlacementRuleConstraint()(self.ids_to_coils(seq))
+                    lambda seq: common.constraints.CenteredBearingsConstraint(shaft_width)(self.ids_to_coils(seq)),
+                    lambda seq: common.constraints.PlacementRuleConstraint()(self.ids_to_coils(seq))
                 ] + [
-                    lambda seq: utils.constraints.MaxQuantityConstraint(target_name, quantity)(self.ids_to_coils(seq))
+                    lambda seq: common.constraints.MaxQuantityConstraint(target_name, quantity)(self.ids_to_coils(seq))
                     for target_name, quantity in type_limits.items()
                 ]
             ).generator(),

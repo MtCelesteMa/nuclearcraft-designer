@@ -1,7 +1,7 @@
 """NuclearCraft: Overhauled turbine rotor blade sequence designer."""
 
 from . import RotorBlade, ROTOR_BLADE_TYPES
-from ... import utils
+from ... import utils, common
 
 import typing
 
@@ -81,7 +81,7 @@ class RotorBladeSequenceDesigner:
                 length,
                 len(self.rotor_blade_types),
                 [
-                    lambda seq: utils.constraints.MaxQuantityConstraint(target_name, quantity)(self.ids_to_blades(seq))
+                    lambda seq: common.constraints.MaxQuantityConstraint(target_name, quantity)(self.ids_to_blades(seq))
                     for target_name, quantity in type_limits.items()
                 ]
             ).generator(),

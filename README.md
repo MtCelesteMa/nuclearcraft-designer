@@ -67,7 +67,7 @@ if __name__ == "__main__":
         10,
         4.0,
         {
-            "sic_sic_cmc": 2,
+            "sic_sic_cmc": 1
         }
     )
     print(status)

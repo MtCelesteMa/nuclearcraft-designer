@@ -1,7 +1,7 @@
 """NuclearCraft: Overhauled turbine rotor blade sequence designer."""
 
 from . import RotorBlade, ROTOR_BLADE_TYPES
-from ... import utils
+from ... import utils, common
 
 import uuid
 
@@ -200,7 +200,7 @@ class RotorBladeSequenceDesigner:
         total_efficiency = self.total_efficiency(model, efficiencies, expansion_levels, opt_expansion)
 
         for target_name, quantity in type_limits.items():
-            utils.constraints.MaxQuantityConstraint(target_name, quantity).apply_to_model(
+            common.constraints.MaxQuantityConstraint(target_name, quantity).apply_to_model(
                 model,
                 blades,
                 self.rotor_blade_types
