@@ -164,8 +164,8 @@ class PlacementRuleConstraint(Constraint):
         return "incomplete" if isinstance(comp, type(None)) else comp.name
 
     def __call__(self, sequence: multi_sequence.MultiSequence[component.Component], **kwargs) -> bool:
-        for x in range(sequence.dims[1]):
-            for y in range(sequence.dims[0]):
+        for y in range(sequence.dims[0]):
+            for x in range(sequence.dims[1]):
                 up = self.component_name(sequence[y - 1, x]) if y > 0 else "wall"
                 right = self.component_name(sequence[y, x + 1]) if x < sequence.dims[1] - 1 else "wall"
                 down = self.component_name(sequence[y + 1, x]) if y < sequence.dims[0] - 1 else "wall"
@@ -186,8 +186,8 @@ class PlacementRuleConstraint(Constraint):
             component_types: list[component.Component],
             **kwargs
     ) -> None:
-        for x in range(sequence.dims[1]):
-            for y in range(sequence.dims[0]):
+        for y in range(sequence.dims[0]):
+            for x in range(sequence.dims[1]):
                 up = sequence[y - 1, x] if y > 0 else -1
                 right = sequence[y, x + 1] if x < sequence.dims[0] - 1 else -1
                 down = sequence[y + 1, x] if y < sequence.dims[0] - 1 else -1
@@ -218,8 +218,8 @@ class CenteredBearingsConstraint(Constraint):
         self.shaft_width = shaft_width
 
     def __call__(self, sequence: multi_sequence.MultiSequence[component.Component], **kwargs) -> bool:
-        for x in range(sequence.dims[1]):
-            for y in range(sequence.dims[0]):
+        for y in range(sequence.dims[0]):
+            for x in range(sequence.dims[1]):
                 if sequence.dims[0] % 2:
                     mid = (sequence.dims[0] - 1) // 2
                     r = (self.shaft_width - 1) // 2
@@ -251,8 +251,8 @@ class CenteredBearingsConstraint(Constraint):
             **kwargs
     ) -> None:
         name_to_id = {comp.name: i for i, comp in enumerate(component_types)}
-        for x in range(sequence.dims[1]):
-            for y in range(sequence.dims[0]):
+        for y in range(sequence.dims[0]):
+            for x in range(sequence.dims[1]):
                 if sequence.dims[0] % 2:
                     mid = (sequence.dims[0] - 1) // 2
                     r = (self.shaft_width - 1) // 2
