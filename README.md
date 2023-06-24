@@ -4,7 +4,7 @@ Generates multiblock designs for NuclearCraft.
 ## Installation
 NuclearCraft Designer can be installed via pip using the following command:
 ```shell
-pip install git+https://github.com/MtCelesteMa/nuclearcraft-designer.git@v0.3.0
+pip install nuclearcraft-designer
 ```
 
 ## Usage
