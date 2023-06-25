@@ -95,40 +95,20 @@ class MaxQuantityConstraint(Constraint):
 class SymmetryConstraint(Constraint):
     """Forces the sequence to be symmetric on all dimensions."""
     def __call__(self, sequence: multi_sequence.MultiSequence[component.Component], **kwargs) -> bool:
-        if len(sequence.dims) == 2:
-            for y in range(sequence.dims[0]):
-                for x in range(sequence.dims[1]):
-                    if (
-                        isinstance(sequence[y, x], type(None))
-                        or isinstance(sequence[sequence.dims[0] - y - 1, x], type(None))
-                        or isinstance(sequence[y, sequence.dims[1] - x - 1], type(None))
-                    ):
-                        continue
-                    if (
-                        sequence[y, x].name != sequence[sequence.dims[0] - y - 1, x].name
-                        or sequence[y, x].name != sequence[y, sequence.dims[1] - x - 1].name
-                    ):
-                        return False
-            return True
-        elif len(sequence.dims) == 3:
-            for x in range(sequence.dims[0]):
-                for y in range(sequence.dims[1]):
-                    for z in range(sequence.dims[2]):
-                        if (
-                            isinstance(sequence[x, y, z], type(None))
-                            or isinstance(sequence[sequence.dims[0] - x - 1, y, z], type(None))
-                            or isinstance(sequence[x, sequence.dims[1] - y - 1, z], type(None))
-                            or isinstance(sequence[x, y, sequence.dims[2] - z - 1], type(None))
-                        ):
-                            continue
-                        if (
-                            sequence[x, y, z].name != sequence[sequence.dims[0] - x - 1, y, z].name
-                            or sequence[x, y, z].name != sequence[x, sequence.dims[1] - y - 1, z].name
-                            or sequence[x, y, z].name != sequence[x, y, sequence.dims[2] - z - 1].name
-                        ):
-                            return False
-            return True
-        raise NotImplementedError("Symmetry constraint only available for 2 or 3 dimensions!")
+        for i in range(len(sequence)):
+            coords = sequence.int_to_tuple(i)
+            if isinstance(sequence[coords], type(None)):
+                continue
+            for d in range(len(sequence.dims)):
+                coords_ = tuple([
+                    sequence.dims[i] - coords[i] - 1 if i == d else coords[i]
+                    for i in range(len(sequence.dims))
+                ])
+                if isinstance(sequence[coords_], type(None)):
+                    continue
+                if sequence[coords].name != sequence[coords_].name:
+                    return False
+        return True
 
     def apply_to_model(
             self,
@@ -137,20 +117,16 @@ class SymmetryConstraint(Constraint):
             component_types: list[component.Component],
             **kwargs
     ) -> None:
-        if len(sequence.dims) == 2:
-            for y in range(sequence.dims[0]):
-                for x in range(sequence.dims[1]):
-                    model.Add(sequence[y, x] == sequence[sequence.dims[0] - y - 1, x])
-                    model.Add(sequence[y, x] == sequence[y, sequence.dims[1] - x - 1])
-        elif len(sequence.dims) == 3:
-            for x in range(sequence.dims[0]):
-                for y in range(sequence.dims[1]):
-                    for z in range(sequence.dims[2]):
-                        model.Add(sequence[x, y, z] == sequence[sequence.dims[0] - x - 1, y, z])
-                        model.Add(sequence[x, y, z] == sequence[x, sequence.dims[1] - y - 1, z])
-                        model.Add(sequence[x, y, z] == sequence[x, y, sequence.dims[2] - z - 1])
-        else:
-            raise NotImplementedError("Symmetry constraint only available for 2 or 3 dimensions!")
+        for i in range(len(sequence)):
+            coords = sequence.int_to_tuple(i)
+            if isinstance(sequence[coords], type(None)):
+                continue
+            for d in range(len(sequence.dims)):
+                coords_ = tuple([
+                    sequence.dims[i] - coords[i] - 1 if i == d else coords[i]
+                    for i in range(len(sequence.dims))
+                ])
+                model.Add(sequence[coords] == sequence[coords_])
 
 
 class PlacementRuleConstraint(Constraint):

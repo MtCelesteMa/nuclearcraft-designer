@@ -1,4 +1,4 @@
-"""Multidimensional lists."""
+"""Multidimensional sequences."""
 
 import typing
 import math
@@ -8,7 +8,7 @@ E = typing.TypeVar("E")
 
 
 class MultiSequence(typing.Iterable[E]):
-    """Multidimensional Sequence."""
+    """A multidimensional Sequence."""
     def __init__(self, seq: list[E], dims: tuple[int, ...]) -> None:
         """Constructs a MultiSequence object.
 
@@ -25,10 +25,29 @@ class MultiSequence(typing.Iterable[E]):
     def __len__(self) -> int:
         return len(self.seq)
 
+    def int_to_tuple(self, key: int) -> tuple[int, ...]:
+        """Converts an integer key to a tuple key.
+
+        :param key: An integer key.
+        :return: A tuple key.
+        """
+        return tuple([
+            (key % math.prod(self.dims[i:])) // math.prod(self.dims[i + 1:])
+            for i in range(len(self.dims))
+        ])
+
+    def tuple_to_int(self, key: tuple[int, ...]) -> int:
+        """Converts a tuple key to an integer key.
+
+        :param key: A tuple key.
+        :return: An integer key.
+        """
+        return sum([
+            key[i] * math.prod(self.dims[i + 1:])
+            for i in range(len(self.dims))
+        ])
+
     def __getitem__(self, key: int | tuple[int, ...]) -> E:
         if isinstance(key, int):
             return self.seq[key]
-        return self.seq[sum([
-            key[i] * math.prod(self.dims[i + 1:])
-            for i in range(len(self.dims))
-        ])]
+        return self.seq[self.tuple_to_int(key)]
