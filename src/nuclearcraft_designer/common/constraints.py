@@ -141,39 +141,28 @@ class PlacementRuleConstraint(Constraint):
 
     def __call__(self, sequence: multi_sequence.MultiSequence[component.Component], **kwargs) -> bool:
         for i in range(len(sequence)):
-            coords = sequence.int_to_tuple(i)
-            if len(coords) == 2:
-                x, y = coords[1], coords[0]
-                up = self.component_name(sequence[y - 1, x]) if y > 0 else "wall"
-                right = self.component_name(sequence[y, x + 1]) if x < sequence.dims[1] - 1 else "wall"
-                down = self.component_name(sequence[y + 1, x]) if y < sequence.dims[0] - 1 else "wall"
-                left = self.component_name(sequence[y, x - 1]) if x > 0 else "wall"
-                if not isinstance(sequence[y, x], type(None)) and not sequence[y, x].placement_rule(
-                        up,
-                        right,
-                        down,
-                        left
-                ):
-                    return False
-            elif len(coords) == 3:
-                x, y, z = coords
-                xp = self.component_name(sequence[x + 1, y, z]) if x < sequence.dims[0] - 1 else "wall"
-                xn = self.component_name(sequence[x - 1, y, z]) if x > 0 else "wall"
-                yp = self.component_name(sequence[x, y + 1, z]) if y < sequence.dims[1] - 1 else "wall"
-                yn = self.component_name(sequence[x, y - 1, z]) if y > 0 else "wall"
-                zp = self.component_name(sequence[x, y, z + 1]) if z < sequence.dims[2] - 1 else "wall"
-                zn = self.component_name(sequence[x, y, z - 1]) if z > 0 else "wall"
-                if not isinstance(sequence[x, y, z], type(None)) and not sequence[x, y, z].placement_rule(
-                        yp,
-                        xp,
-                        yn,
-                        xn,
-                        zp,
-                        zn
-                ):
-                    return False
-            else:
-                raise NotImplementedError("Placement rule constraint only supports 2 and 3 dimensions!")
+            idx = sequence.int_to_tuple(i)
+            comp_names = []
+            for d in range(len(sequence.dims)):
+                if idx[d] < sequence.dims[d] - 1:
+                    idxp = tuple([
+                        idx[i] + 1 if i == d else idx[i]
+                        for i in range(len(sequence.dims))
+                    ])
+                    comp_names.append(sequence[idxp].name if not isinstance(sequence[idxp], type(None)) else "incomplete")
+                else:
+                    comp_names.append("wall")
+                if idx[d] > 0:
+                    idxn = tuple([
+                        idx[i] - 1 if i == d else idx[i]
+                        for i in range(len(sequence.dims))
+                    ])
+                    comp_names.append(sequence[idxn].name if not isinstance(sequence[idxn], type(None)) else "incomplete")
+                else:
+                    comp_names.append("wall")
+            comp_names = tuple(comp_names)
+            if not isinstance(sequence[idx], type(None)) and not sequence[idx].placement_rule(comp_names):
+                return False
         return True
 
     def apply_to_model(
@@ -184,53 +173,36 @@ class PlacementRuleConstraint(Constraint):
             **kwargs
     ) -> None:
         for i in range(len(sequence)):
-            coords = sequence.int_to_tuple(i)
-            if len(coords) == 2:
-                x, y = coords[1], coords[0]
-                up = sequence[y - 1, x] if y > 0 else -1
-                right = sequence[y, x + 1] if x < sequence.dims[0] - 1 else -1
-                down = sequence[y + 1, x] if y < sequence.dims[0] - 1 else -1
-                left = sequence[y, x - 1] if x > 0 else -1
-                satisfied_vars = [
-                    component_type.placement_rule.to_model(
-                        model,
-                        [comp.name for comp in component_types],
-                        up,
-                        right,
-                        down,
-                        left
-                    )
-                    for component_type in component_types
-                ]
-                satisfied = model.NewBoolVar(str(uuid.uuid4()))
-                model.AddElement(sequence[y, x], satisfied_vars, satisfied)
-                model.Add(satisfied == 1)
-            elif len(coords) == 3:
-                x, y, z = coords
-                xp = sequence[x + 1, y, z] if x < sequence.dims[0] - 1 else -1
-                xn = sequence[x - 1, y, z] if x > 0 else -1
-                yp = sequence[x, y + 1, z] if y < sequence.dims[1] - 1 else -1
-                yn = sequence[x, y - 1, z] if y > 0 else -1
-                zp = sequence[x, y, z + 1] if z < sequence.dims[2] - 1 else -1
-                zn = sequence[x, y, z - 1] if z > 0 else -1
-                satisfied_vars = [
-                    component_type.placement_rule.to_model(
-                        model,
-                        [comp.name for comp in component_types],
-                        yp,
-                        xp,
-                        yn,
-                        xn,
-                        zp,
-                        zn
-                    )
-                    for component_type in component_types
-                ]
-                satisfied = model.NewBoolVar(str(uuid.uuid4()))
-                model.AddElement(sequence[y, x], satisfied_vars, satisfied)
-                model.Add(satisfied == 1)
-            else:
-                raise NotImplementedError("Placement rule constraint only supports 2 and 3 dimensions!")
+            idx = sequence.int_to_tuple(i)
+            comp_ids = []
+            for d in range(len(sequence.dims)):
+                if idx[d] < sequence.dims[d] - 1:
+                    idxp = tuple([
+                        idx[i] + 1 if i == d else idx[i]
+                        for i in range(len(sequence.dims))
+                    ])
+                    comp_ids.append(sequence[idxp])
+                else:
+                    comp_ids.append(-1)
+                if idx[d] > 0:
+                    idxn = tuple([
+                        idx[i] - 1 if i == d else idx[i]
+                        for i in range(len(sequence.dims))
+                    ])
+                    comp_ids.append(sequence[idxn])
+                else:
+                    comp_ids.append(-1)
+            satisfied_vars = [
+                component_type.placement_rule.to_model(
+                    model,
+                    [comp.name for comp in component_types],
+                    comp_ids
+                )
+                for component_type in component_types
+            ]
+            satisfied = model.NewBoolVar(str(uuid.uuid4()))
+            model.AddElement(sequence[idx], satisfied_vars, satisfied)
+            model.Add(satisfied == 1)
 
 
 class CenteredBearingsConstraint(Constraint):

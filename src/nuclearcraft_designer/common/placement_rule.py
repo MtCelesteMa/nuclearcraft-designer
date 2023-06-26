@@ -16,15 +16,10 @@ class LogicMode(enum.Enum):
 
 class PlacementRule:
     """NuclearCraft reactor/turbine component placement rule."""
-    def __call__(self, up: str, right: str, down: str, left: str, front: str = None, back: str = None) -> bool:
+    def __call__(self, comp_names: tuple[str, ...]) -> bool:
         """Determines if the rule is satisfied.
 
-        :param up: The name of the component above.
-        :param right: The name of the component to the right.
-        :param down: The name of the component below.
-        :param left: The name of the component to the left.
-        :param front: The name of the component in front.
-        :param back: The name of the component behind.
+        :param comp_names: A list of adjacent component names. Must be in the order of (+x, -x, +y, -y, +z, -z).
         :return: True if the rule is satisfied, false otherwise.
         """
         return True
@@ -32,24 +27,14 @@ class PlacementRule:
     def to_model(
             self,
             model: cp_model.CpModel,
-            component_types: list[str],
-            up: cp_model.IntVar,
-            right: cp_model.IntVar,
-            down: cp_model.IntVar,
-            left: cp_model.IntVar,
-            front: cp_model.IntVar = -1,
-            back: cp_model.IntVar = -1
+            type_names: list[str],
+            comp_ids: list[cp_model.IntVar]
     ) -> cp_model.IntVar:
         """Registers the placement rule to a CP-SAT model.
 
         :param model: The CP-SAT model to register the placement rule to.
-        :param component_types: A list of component type names.
-        :param up: An IntVar representing the component above.
-        :param right: An IntVar representing the component to the right.
-        :param down: An IntVar representing the component below.
-        :param left: An IntVar representing the component to the left.
-        :param front: An IntVar representing the component to the right.
-        :param back: An IntVar representing the component behind.
+        :param type_names: A list of component type names.
+        :param comp_ids: A list IntVars representing adjacent components.
         :return: An IntVar representing whether the placement rule is satisfied.
         """
         satisfied = model.NewBoolVar(str(uuid.uuid4()))
@@ -78,18 +63,21 @@ class SimplePlacementRule(PlacementRule):
         self.exact = exact
         self.axial = axial
 
-    def __call__(self, up: str, right: str, down: str, left: str, front: str = None, back: str = None) -> bool:
-        components = (up, right, down, left, front, back)
-        if "incomplete" in components:
+    def __call__(self, comp_names: tuple[str, ...]) -> bool:
+        if "incomplete" in comp_names:
             return True
 
         quantity = 0
-        axial = False
-        for component in components:
-            if component == self.name:
+        for name in comp_names:
+            if name == self.name:
                 quantity += 1
-        if up == down == self.name or right == left == self.name or front == back == self.name:
-            axial = True
+
+        axial = False
+        for i in range(len(comp_names) // 2):
+            if comp_names[i * 2] == comp_names[i * 2 + 1] == self.name:
+                axial = True
+                break
+
         if self.exact:
             if quantity != self.quantity:
                 return False
@@ -103,36 +91,25 @@ class SimplePlacementRule(PlacementRule):
     def to_model(
             self,
             model: cp_model.CpModel,
-            component_types: list[str],
-            up: cp_model.IntVar,
-            right: cp_model.IntVar,
-            down: cp_model.IntVar,
-            left: cp_model.IntVar,
-            front: cp_model.IntVar = -1,
-            back: cp_model.IntVar = -1
+            type_names: list[str],
+            comp_ids: list[cp_model.IntVar]
     ) -> cp_model.IntVar:
-        name_to_id = {comp: i for i, comp in enumerate(component_types)}
-        components = (up, right, down, left, front, back)
+        name_to_id = {comp: i for i, comp in enumerate(type_names)}
 
-        quantity = [model.NewIntVar(0, 6, str(uuid.uuid4())) for _ in range(6)]
-        matches = [model.NewBoolVar(str(uuid.uuid4())) for _ in range(6)]
-        for i in range(6):
-            model.Add(components[i] == name_to_id[self.name]).OnlyEnforceIf(matches[i])
-            model.Add(components[i] != name_to_id[self.name]).OnlyEnforceIf(matches[i].Not())
+        quantity = [model.NewIntVar(0, len(comp_ids), str(uuid.uuid4())) for _ in range(len(comp_ids))]
+        matches = [model.NewBoolVar(str(uuid.uuid4())) for _ in range(len(comp_ids))]
+        for i in range(len(comp_ids)):
+            model.Add(comp_ids[i] == name_to_id[self.name]).OnlyEnforceIf(matches[i])
+            model.Add(comp_ids[i] != name_to_id[self.name]).OnlyEnforceIf(matches[i].Not())
 
             quantity_prev = quantity[i - 1] if i > 0 else 0
             model.Add(quantity[i] == quantity_prev + 1).OnlyEnforceIf(matches[i])
             model.Add(quantity[i] == quantity_prev).OnlyEnforceIf(matches[i].Not())
 
-        axials = [model.NewBoolVar(str(uuid.uuid4())) for _ in range(3)]
-        model.AddBoolAnd([matches[0], matches[2]]).OnlyEnforceIf(axials[0])
-        model.AddBoolOr([matches[0].Not(), matches[2].Not()]).OnlyEnforceIf(axials[0].Not())
-
-        model.AddBoolAnd([matches[1], matches[3]]).OnlyEnforceIf(axials[1])
-        model.AddBoolOr([matches[1].Not(), matches[3].Not()]).OnlyEnforceIf(axials[1].Not())
-
-        model.AddBoolAnd([matches[4], matches[5]]).OnlyEnforceIf(axials[2])
-        model.AddBoolOr([matches[4].Not(), matches[5].Not()]).OnlyEnforceIf(axials[2].Not())
+        axials = [model.NewBoolVar(str(uuid.uuid4())) for _ in range(len(comp_ids) // 2)]
+        for i in range(len(comp_ids) // 2):
+            model.AddBoolAnd([matches[i * 2], matches[i * 2 + 1]]).OnlyEnforceIf(axials[i])
+            model.AddBoolOr([matches[i * 2].Not(), matches[i * 2 + 1].Not()]).OnlyEnforceIf(axials[i].Not())
 
         axial = model.NewBoolVar(str(uuid.uuid4()))
         model.AddBoolOr(axials).OnlyEnforceIf(axial)
@@ -167,31 +144,26 @@ class CompoundPlacementRule(PlacementRule):
         self.rules = rules
         self.mode = mode
 
-    def __call__(self, up: str, right: str, down: str, left: str, front: str = None, back: str = None) -> bool:
+    def __call__(self, comp_names: tuple[str, ...]) -> bool:
         if self.mode == LogicMode.AND:
             for rule in self.rules:
-                if not rule(up, right, down, left, front, back):
+                if not rule(comp_names):
                     return False
             return True
         else:
             for rule in self.rules:
-                if rule(up, right, down, left, front, back):
+                if rule(comp_names):
                     return True
             return False
 
     def to_model(
             self,
             model: cp_model.CpModel,
-            component_types: list[str],
-            up: cp_model.IntVar,
-            right: cp_model.IntVar,
-            down: cp_model.IntVar,
-            left: cp_model.IntVar,
-            front: cp_model.IntVar = -1,
-            back: cp_model.IntVar = -1
+            type_names: list[str],
+            comp_ids: list[cp_model.IntVar]
     ) -> cp_model.IntVar:
         satisfied_vars = [
-            rule.to_model(model, component_types, up, right, down, left, front, back)
+            rule.to_model(model, type_names, comp_ids)
             for rule in self.rules
         ]
         satisfied = model.NewBoolVar(str(uuid.uuid4()))
