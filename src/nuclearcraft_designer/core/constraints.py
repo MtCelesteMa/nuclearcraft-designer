@@ -1,14 +1,10 @@
 """Constraints for NuclearCraft Designer"""
 
-from . import multi_sequence
-from . import component
+from . import multi_sequence, component
 
 import uuid
 
-try:
-    from ortools.sat.python import cp_model
-except ImportError:
-    cp_model = None
+from ortools.sat.python import cp_model
 
 
 class Constraint:
@@ -26,7 +22,7 @@ class Constraint:
         """
         return True
 
-    def apply_to_model(
+    def to_model(
             self,
             model: cp_model.CpModel,
             sequence: multi_sequence.MultiSequence[cp_model.IntVar],
@@ -67,7 +63,7 @@ class MaxQuantityConstraint(Constraint):
                 n += 1
         return n <= self.max_quantity
 
-    def apply_to_model(
+    def to_model(
             self,
             model: cp_model.CpModel,
             sequence: multi_sequence.MultiSequence[cp_model.IntVar],
@@ -110,7 +106,7 @@ class SymmetryConstraint(Constraint):
                     return False
         return True
 
-    def apply_to_model(
+    def to_model(
             self,
             model: cp_model.CpModel,
             sequence: multi_sequence.MultiSequence[cp_model.IntVar],
@@ -165,7 +161,7 @@ class PlacementRuleConstraint(Constraint):
                 return False
         return True
 
-    def apply_to_model(
+    def to_model(
             self,
             model: cp_model.CpModel,
             sequence: multi_sequence.MultiSequence[cp_model.IntVar],
@@ -240,7 +236,7 @@ class CenteredBearingsConstraint(Constraint):
                                 return False
         return True
 
-    def apply_to_model(
+    def to_model(
             self,
             model: cp_model.CpModel,
             sequence: multi_sequence.MultiSequence[cp_model.IntVar],

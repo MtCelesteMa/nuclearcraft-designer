@@ -1,12 +1,9 @@
-"""Placement rules for NuclearCraft reactors and turbines."""
+"""Placement rules for NuclearCraft reactor/turbine components."""
 
 import enum
 import uuid
 
-try:
-    from ortools.sat.python import cp_model
-except ImportError:
-    cp_model = None
+from ortools.sat.python import cp_model
 
 
 class LogicMode(enum.Enum):

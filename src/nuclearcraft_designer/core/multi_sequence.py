@@ -1,15 +1,12 @@
 """Multidimensional sequences."""
 
-import typing
+from collections import abc
 import math
 
 
-E = typing.TypeVar("E")
-
-
-class MultiSequence(typing.Iterable[E]):
+class MultiSequence[E](abc.Sequence[E], abc.Iterable[E]):
     """A multidimensional Sequence."""
-    def __init__(self, seq: list[E], dims: tuple[int, ...]) -> None:
+    def __init__(self, seq: abc.Sequence[E], dims: tuple[int, ...]) -> None:
         """Constructs a MultiSequence object.
 
         :param seq: A one-dimensional representation of the sequence.
@@ -19,7 +16,7 @@ class MultiSequence(typing.Iterable[E]):
         self.dims = dims
         assert math.prod(self.dims) == len(self.seq)
 
-    def __iter__(self) -> typing.Iterator[E]:
+    def __iter__(self) -> abc.Iterator[E]:
         return iter(self.seq)
 
     def __len__(self) -> int:
